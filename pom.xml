@@ -6,7 +6,7 @@
 
     <groupId>net.tfminecraft</groupId>
     <artifactId>vfbuilders</artifactId>
-    <version>0.0.2-ALPHA</version>
+    <version>0.1.0-BETA</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -27,6 +27,20 @@
             <version>2.10.1</version>
             <scope>system</scope>
             <systemPath>D:/Dokumenter/My Plugins/Reference Libs/gson-2.10.1.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>local</groupId>
+            <artifactId>LoneLibs</artifactId>
+            <version>3.5.0</version>
+            <scope>system</scope>
+            <systemPath>D:/Dokumenter/My Plugins/Reference Libs/ItemsAdder_3.5.0-r2.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>local</groupId>
+            <artifactId>ItemsAdder</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>D:/Dokumenter/My Plugins/Reference Libs/LoneLibs.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>

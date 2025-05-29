@@ -26,6 +26,9 @@ import net.tfminecraft.VFBuilders.core.BlueprintCategory;
 import net.tfminecraft.VFBuilders.enums.VFBGUI;
 import net.tfminecraft.VFBuilders.holders.VFBHolder;
 import net.tfminecraft.VFBuilders.loaders.CategoryLoader;
+import net.tfminecraft.VehicleFramework.Vehicles.Vehicle;
+import net.tfminecraft.VehicleFramework.Vehicles.Component.VehicleComponent;
+import net.tfminecraft.VehicleFramework.Weapons.Weapon;
 
 public class InventoryManager {
     public void categoryView(Inventory i, Player p, ActiveStation s, boolean open) {
@@ -36,7 +39,7 @@ public class InventoryManager {
 		for(BlueprintCategory cat : CategoryLoader.get().values()) {
             if(!cat.getStation().equals(s.getStation())) continue;
 			if(cat.hasPermission() && !p.hasPermission(cat.getPermission())) continue;
-            i.setItem(x, getCategoryItem(cat));
+            i.setItem(x, getCategoryItem(p, cat));
 			x++;
 		}
 		x = 0;
@@ -60,6 +63,7 @@ public class InventoryManager {
 		}
 		int x = 0;
 		for(Blueprint b : cat.getBlueprints()) {
+			if(!b.hasVehicle()) continue;
 			if(b.hasPermission() && !p.hasPermission(b.getPermission())) continue;
             i.setItem(x, getBlueprintItem(b));
 			x++;
@@ -89,14 +93,14 @@ public class InventoryManager {
 		return i;
 	}
 
-    private ItemStack getCategoryItem(BlueprintCategory cat) {
+    private ItemStack getCategoryItem(Player p, BlueprintCategory cat) {
 		ItemStack i = new ItemStack(cat.getItem());
 		ItemMeta m = i.getItemMeta();
 		NamespacedKey key = new NamespacedKey(VFBuilders.plugin, "vfb_category_id");
 		m.getPersistentDataContainer().set(key, PersistentDataType.STRING, cat.getId());
 		List<String> lore = new ArrayList<>(m.getLore());
 		lore.add(" ");
-		lore.add(StringFormatter.formatHex("#53db9c"+cat.getBlueprints().size()+" #ccbf8fBlueprints"));
+		lore.add(StringFormatter.formatHex("#53db9c"+getBlueprintCount(p, cat)+" #ccbf8fBlueprints"));
 		m.setLore(lore);
 		i.setItemMeta(m);
 		return i;
@@ -106,9 +110,22 @@ public class InventoryManager {
 		ItemCreator creator = TLibs.getItemAPI().getCreator();
 		ItemStack i = new ItemStack(b.getItem());
 		ItemMeta m = i.getItemMeta();
+		Vehicle v = b.getVehicle();
+		m.setDisplayName(v.getName());
 		NamespacedKey key = new NamespacedKey(VFBuilders.plugin, "vfb_blueprint_id");
 		m.getPersistentDataContainer().set(key, PersistentDataType.STRING, b.getId());
 		List<String> lore = new ArrayList<>(m.getLore());
+		lore.add(" ");
+		lore.add(StringFormatter.formatHex("#ccbf8fSeats§e: #86d672"+v.getSeatHandler().getSeats().size()));
+		if(v.getWeapons().size() > 0) lore.add(StringFormatter.formatHex("#ccbf8fWeapons§e: #86d672"+v.getWeapons().size()));
+		lore.add(" ");
+		lore.add(StringFormatter.formatHex("#66ad89Components§e:"));
+		for(VehicleComponent c : v.getComponentHandler().getComponents()) {
+			lore.add(StringFormatter.formatHex("#85817b- #c9a151"+c.getAlias()+" §7(#5ad17eHP§e: #84d19b"+c.getHealthData().getHealth()+"§7)"));
+		}
+		for(Weapon w : v.getWeapons()) {
+			lore.add(StringFormatter.formatHex("#85817b- #c9a151"+w.getName()+" §7(#5ad17eHP§e: #84d19b"+w.getHealthData().getHealth()+"§7)"));
+		}
 		lore.add(" ");
 		lore.add(StringFormatter.formatHex("#b38372Time§e: #8fb6c2"+TimeFormatter.formatTime(b.getTime())));
 		lore.add(StringFormatter.formatHex("#ccbf8f§lInputs:"));
@@ -121,5 +138,18 @@ public class InventoryManager {
 		m.setLore(lore);
 		i.setItemMeta(m);
 		return i;
+	}
+
+	private int getBlueprintCount(Player p, BlueprintCategory cat) {
+		int count = 0;
+		for(Blueprint b : cat.getBlueprints()) {
+			if(b.hasPermission()) {
+				if(p.hasPermission(b.getPermission())) count++;
+			} else {
+				count++;
+			}
+		}
+
+		return count;
 	}
 }

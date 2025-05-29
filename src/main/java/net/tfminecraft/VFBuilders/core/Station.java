@@ -11,6 +11,10 @@ public class Station {
         block = config.getString("block", "v.bedrock");
     }
 
+    public String getId() {
+        return id;
+    }
+
     public String getBlock() {
         return block;
     }

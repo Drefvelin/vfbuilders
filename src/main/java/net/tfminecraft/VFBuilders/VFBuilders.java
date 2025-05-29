@@ -39,7 +39,7 @@ public class VFBuilders extends JavaPlugin {
 
     @Override
 	public void onDisable() {
-		
+		stationManager.stop();
 	}
 	public void registerListeners() {
 		getServer().getPluginManager().registerEvents(stationManager, this);
@@ -47,7 +47,7 @@ public class VFBuilders extends JavaPlugin {
 		getCommand(commandManager.cmd1).setExecutor(commandManager);
 	}
 	public void startManagers() {
-		
+		stationManager.start();
 	}
 	public void createFolders() {
 		if (!getDataFolder().exists()) getDataFolder().mkdir();
