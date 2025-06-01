@@ -28,6 +28,7 @@ import org.bukkit.util.Vector;
 import dev.lone.itemsadder.api.Events.FurnitureBreakEvent;
 import me.Plugins.TLibs.TLibs;
 import me.Plugins.TLibs.Objects.API.SubAPI.BlockChecker;
+import net.tfminecraft.VFBuilders.Cache;
 import net.tfminecraft.VFBuilders.VFBuilders;
 import net.tfminecraft.VFBuilders.core.ActivePlacement;
 import net.tfminecraft.VFBuilders.core.ActiveStation;
@@ -149,7 +150,7 @@ public class StationManager implements Listener {
 
             ActivePlacement placement = new ActivePlacement(p, h.getStation(), b);
             activePlacements.put(p.getUniqueId(), placement);
-            p.sendMessage("§aSelect spawn location by left-clicking within 8 blocks.");
+            p.sendMessage("§aSelect spawn location by left-clicking within "+Cache.constructionDistance+" blocks.");
             startParticleTrail(placement); // Method defined below
         }
     }
@@ -167,8 +168,8 @@ public class StationManager implements Listener {
         Location stationLoc = placement.getStation().getLocation();
         Location clickLoc = p.getLocation();
 
-        if (clickLoc.distanceSquared(stationLoc) > 64) {
-            p.sendMessage("§cToo far from the station! (max 8 blocks)");
+        if (clickLoc.distanceSquared(stationLoc) > Math.pow(Cache.constructionDistance, 2)) {
+            p.sendMessage("§cToo far from the station! (max "+Cache.constructionDistance+" blocks)");
             return;
         }
 
@@ -213,7 +214,7 @@ public class StationManager implements Listener {
                     cancel(); return;
                 }
                 Location playerLoc = player.getLocation();
-                if (playerLoc.distanceSquared(stationLoc) > 64) return;
+                if (playerLoc.distanceSquared(stationLoc) > Math.pow(Cache.constructionDistance, 2)) return;
 
                 drawParticleLine(stationLoc.clone().add(0.5, 1, 0.5),
                                 playerLoc.clone().add(0, 1.5, 0));
@@ -258,7 +259,6 @@ public class StationManager implements Listener {
         UUID uuid = e.getPlayer().getUniqueId();
         if (activePlacements.containsKey(uuid)) {
             activePlacements.remove(uuid);
-            e.getPlayer().sendMessage("§cVehicle placement cancelled due to logout.");
         }
     }
 

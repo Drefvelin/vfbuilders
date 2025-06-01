@@ -7,6 +7,7 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
+import net.tfminecraft.VFBuilders.Cache;
 import net.tfminecraft.VFBuilders.VFBuilders;
 import net.tfminecraft.VehicleFramework.VFLogger;
 
@@ -20,7 +21,7 @@ public class ConfigLoader {
         } catch (IOException | InvalidConfigurationException e) {
             e.printStackTrace();
         }
-        
+        Cache.constructionDistance = config.getInt("construction-max-distance", 8);
 	}
     
 }
