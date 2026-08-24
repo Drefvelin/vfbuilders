@@ -2,15 +2,19 @@ package net.tfminecraft.VFBuilders.core;
 
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.ArmorStand;
 
 import me.Plugins.TLibs.Utils.TimeFormatter;
+import net.tfminecraft.VFBuilders.events.VehicleConstructEvent;
+import net.tfminecraft.VFBuilders.loaders.BlueprintLoader;
+import net.tfminecraft.VehicleFramework.VFLogger;
 import net.tfminecraft.VehicleFramework.VehicleFramework;
 import net.tfminecraft.VehicleFramework.Managers.VehicleManager;
-import net.tfminecraft.VFBuilders.loaders.BlueprintLoader;
+import net.tfminecraft.VehicleFramework.Vehicles.ActiveVehicle;
 
 public class ActiveStation {
     private UUID id;
@@ -20,6 +24,7 @@ public class ActiveStation {
     private Blueprint blueprint;
     private Location loc;
     private Location spawnLoc;
+    private UUID constructorUuid;
 
     private ArmorStand hologramTitle;
     private ArmorStand hologramTime;
@@ -33,10 +38,21 @@ public class ActiveStation {
     }
 
     public ActiveStation(Location loc, Station station, String blueprintId, int timeLeft, Location spawnLoc) {
-        this.id = UUID.randomUUID(); // Or persist ID if needed
+        this(loc, station, blueprintId, timeLeft, spawnLoc, null);
+    }
+
+    public ActiveStation(
+            Location loc,
+            Station station,
+            String blueprintId,
+            int timeLeft,
+            Location spawnLoc,
+            UUID constructorUuid) {
+        this.id = UUID.randomUUID();
         this.loc = loc;
         this.station = station;
         this.timeLeft = timeLeft;
+        this.constructorUuid = constructorUuid;
 
         if (blueprintId != null) {
             Blueprint blueprint = BlueprintLoader.getByString(blueprintId);
@@ -52,9 +68,10 @@ public class ActiveStation {
     }
 
 
-    public void selectBlueprint(Blueprint b) {
+    public void selectBlueprint(Blueprint b, UUID constructorUuid) {
         blueprint = b;
         timeLeft = b.getTime();
+        this.constructorUuid = constructorUuid;
         updateHologram();
     }
 
@@ -75,38 +92,54 @@ public class ActiveStation {
     }
 
     public void complete() {
-        if (spawnLoc != null) {
-            // Check if any player is within 96 blocks
-            boolean hasNearbyPlayer = spawnLoc.getWorld().getPlayers().stream()
-                .anyMatch(p -> p.getLocation().distanceSquared(spawnLoc) <= (96 * 96));
-
-            if (!hasNearbyPlayer) {
-                return; // Delay completion until a player is nearby
-            }
-
-            // Spawn vehicle
-            VehicleManager manager = VehicleFramework.getVehicleManager();
-            manager.spawn(spawnLoc, blueprint.getVehicle());
-
-            // Visual effects
-            Location center = spawnLoc.clone().add(0.5, 1, 0.5);
-
-            center.getWorld().spawnParticle(Particle.EXPLOSION_NORMAL, center, 10, 0.3, 0.3, 0.3, 0.05);
-            center.getWorld().spawnParticle(Particle.CLOUD, center, 20, 0.5, 0.5, 0.5, 0.01);
-            center.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, center, 40, 0.6, 1, 0.6, 0);
-
-            center.getWorld().playSound(center, Sound.ENTITY_IRON_GOLEM_REPAIR, 1f, 1.2f);
-            center.getWorld().playSound(center, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.6f);
+        if (spawnLoc == null || blueprint == null) {
+            return;
         }
 
-        // Only clear if completed
+        // Check if any player is within 96 blocks
+        boolean hasNearbyPlayer = spawnLoc.getWorld().getPlayers().stream()
+            .anyMatch(p -> p.getLocation().distanceSquared(spawnLoc) <= (96 * 96));
+
+        if (!hasNearbyPlayer) {
+            return; // Delay completion until a player is nearby
+        }
+
+        VehicleManager manager = VehicleFramework.getVehicleManager();
+        ActiveVehicle vehicle = manager.spawn(spawnLoc, blueprint.getVehicle());
+        if (vehicle == null) {
+            VFLogger.log("Failed to spawn vehicle for blueprint " + blueprint.getId() + " at station " + loc);
+            return;
+        }
+
+        Location completedSpawn = spawnLoc.clone();
+        Bukkit.getPluginManager().callEvent(
+            new VehicleConstructEvent(constructorUuid, vehicle, blueprint, completedSpawn, this));
+
+        // Visual effects
+        Location center = completedSpawn.clone().add(0.5, 1, 0.5);
+
+        center.getWorld().spawnParticle(Particle.EXPLOSION_NORMAL, center, 10, 0.3, 0.3, 0.3, 0.05);
+        center.getWorld().spawnParticle(Particle.CLOUD, center, 20, 0.5, 0.5, 0.5, 0.01);
+        center.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, center, 40, 0.6, 1, 0.6, 0);
+
+        center.getWorld().playSound(center, Sound.ENTITY_IRON_GOLEM_REPAIR, 1f, 1.2f);
+        center.getWorld().playSound(center, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.6f);
+
         spawnLoc = null;
         blueprint = null;
+        constructorUuid = null;
     }
 
-
-
-
+    public void cancelConstruction() {
+        if (blueprint != null) {
+            blueprint.drop(loc.clone().add(0.5, 1, 0.5));
+        }
+        removeHolograms();
+        spawnLoc = null;
+        blueprint = null;
+        constructorUuid = null;
+        timeLeft = 0;
+    }
 
     public UUID getUuid() {
         return id;
@@ -146,6 +179,14 @@ public class ActiveStation {
 
     public void setSpawnLocation(Location loc) {
         spawnLoc = loc;
+    }
+
+    public UUID getConstructorUuid() {
+        return constructorUuid;
+    }
+
+    public void setConstructorUuid(UUID constructorUuid) {
+        this.constructorUuid = constructorUuid;
     }
 
     private void updateHologram() {

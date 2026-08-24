@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -37,6 +38,7 @@ import net.tfminecraft.VFBuilders.core.BlueprintCategory;
 import net.tfminecraft.VFBuilders.core.Station;
 import net.tfminecraft.VFBuilders.data.Database;
 import net.tfminecraft.VFBuilders.enums.VFBGUI;
+import net.tfminecraft.VFBuilders.events.BeginVehicleConstructionEvent;
 import net.tfminecraft.VFBuilders.holders.VFBHolder;
 import net.tfminecraft.VFBuilders.loaders.BlueprintLoader;
 import net.tfminecraft.VFBuilders.loaders.CategoryLoader;
@@ -183,12 +185,20 @@ public class StationManager implements Listener {
             return;
         }
 
+        ActiveStation station = placement.getStation();
+        BeginVehicleConstructionEvent beginEvent = new BeginVehicleConstructionEvent(
+            p, blueprint, station, clickLoc);
+        Bukkit.getPluginManager().callEvent(beginEvent);
+        if (beginEvent.isCancelled()) {
+            activePlacements.remove(uuid);
+            return;
+        }
+
         // Take the inputs and set the location
         blueprint.takeInputs(p);
         placement.getStation().setSpawnLocation(clickLoc);
         placement.setFinalSpawnLocation(clickLoc);
-        ActiveStation station = placement.getStation();
-        station.selectBlueprint(blueprint);
+        station.selectBlueprint(blueprint, p.getUniqueId());
         p.sendMessage("§aSpawn location set!");
         p.sendTitle("", "§eStarted Constructing "+blueprint.getVehicle().getName(), 10, 60, 10);
         p.playSound(p, Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
@@ -286,7 +296,7 @@ public class StationManager implements Listener {
         station.removeHolograms();
 
         if (station.hasBlueprint()) {
-            station.getBlueprint().drop(loc.clone().add(0.5, 1, 0.5));
+            station.cancelConstruction();
         }
 
         station.setSpawnLocation(null); // Important to stop the particle trail

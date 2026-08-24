@@ -32,6 +32,9 @@ public class Database {
             data.spawnLocation = station.hasSpawnLocation() ? toSerializableLoc(station.getSpawnLocation()) : null;
             data.blueprintId = station.hasBlueprint() ? station.getBlueprint().getId() : null;
             data.timeLeft = station.getTimeLeft();
+            if (station.hasBlueprint() && station.getConstructorUuid() != null) {
+                data.constructorUuid = station.getConstructorUuid().toString();
+            }
 
             dataList.add(data);
         }
@@ -57,12 +60,22 @@ public class Database {
                 Station baseStation = StationLoader.getByString(data.stationId);
                 if (baseStation == null) continue;
 
+                UUID constructorUuid = null;
+                if (data.constructorUuid != null && !data.constructorUuid.isEmpty()) {
+                    try {
+                        constructorUuid = UUID.fromString(data.constructorUuid);
+                    } catch (IllegalArgumentException ignored) {
+                        constructorUuid = null;
+                    }
+                }
+
                 ActiveStation station = new ActiveStation(
                     loc,
                     baseStation,
                     data.blueprintId,
                     data.timeLeft,
-                    data.spawnLocation != null ? toBukkitLoc(data.spawnLocation) : null
+                    data.spawnLocation != null ? toBukkitLoc(data.spawnLocation) : null,
+                    constructorUuid
                 );
 
                 loaded.put(loc, station);
@@ -101,6 +114,7 @@ public class Database {
         String stationId;
         String blueprintId;
         int timeLeft;
+        String constructorUuid;
     }
 }
 
