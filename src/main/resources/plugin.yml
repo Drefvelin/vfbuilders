@@ -9,5 +9,11 @@ depend: [TLibs, VehicleFramework]
 
 commands:
   vfbuilders:
-    useage: /<command>
-    description: VFBuilders Command
+    usage: /<command> reload
+    description: VFBuilders admin commands
+    permission: vfbuilders.reload
+
+permissions:
+  vfbuilders.reload:
+    description: Reload VFBuilders config, stations, categories, and blueprints
+    default: op

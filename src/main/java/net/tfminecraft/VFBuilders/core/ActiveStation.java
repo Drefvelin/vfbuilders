@@ -11,6 +11,7 @@ import org.bukkit.entity.ArmorStand;
 import me.Plugins.TLibs.Utils.TimeFormatter;
 import net.tfminecraft.VFBuilders.events.VehicleConstructEvent;
 import net.tfminecraft.VFBuilders.loaders.BlueprintLoader;
+import net.tfminecraft.VFBuilders.loaders.StationLoader;
 import net.tfminecraft.VehicleFramework.VFLogger;
 import net.tfminecraft.VehicleFramework.VehicleFramework;
 import net.tfminecraft.VehicleFramework.Managers.VehicleManager;
@@ -183,6 +184,24 @@ public class ActiveStation {
 
     public UUID getConstructorUuid() {
         return constructorUuid;
+    }
+
+    public void rebindDefinitions() {
+        if (station != null) {
+            Station updatedStation = StationLoader.getByString(station.getId());
+            if (updatedStation != null) {
+                station = updatedStation;
+            }
+        }
+        if (blueprint == null) {
+            return;
+        }
+        Blueprint updatedBlueprint = BlueprintLoader.getByString(blueprint.getId());
+        if (updatedBlueprint != null) {
+            blueprint = updatedBlueprint;
+            return;
+        }
+        cancelConstruction();
     }
 
     public void setConstructorUuid(UUID constructorUuid) {

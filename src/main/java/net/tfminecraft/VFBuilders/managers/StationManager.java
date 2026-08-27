@@ -73,6 +73,13 @@ public class StationManager implements Listener {
         Database.saveStations(stations);
     }
 
+    public void rebindAfterReload(Runnable reloadDefinitions) {
+        reloadDefinitions.run();
+        for (ActiveStation station : stations.values()) {
+            station.rebindDefinitions();
+        }
+    }
+
     public void tickCycle() {
         new BukkitRunnable() {
             @Override

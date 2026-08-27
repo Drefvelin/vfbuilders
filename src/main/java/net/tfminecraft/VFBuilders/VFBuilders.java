@@ -2,7 +2,6 @@ package net.tfminecraft.VFBuilders;
 
 import java.io.File;
 
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.tfminecraft.VFBuilders.loaders.BlueprintLoader;
@@ -45,6 +44,16 @@ public class VFBuilders extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(stationManager, this);
 		
 		getCommand(commandManager.cmd1).setExecutor(commandManager);
+		getCommand(commandManager.cmd1).setTabCompleter(commandManager);
+	}
+
+	public void reload() {
+		stationManager.rebindAfterReload(() -> {
+			BlueprintLoader.get().clear();
+			CategoryLoader.get().clear();
+			StationLoader.get().clear();
+			loadConfigs();
+		});
 	}
 	public void startManagers() {
 		stationManager.start();
@@ -61,12 +70,19 @@ public class VFBuilders extends JavaPlugin {
 		stationLoader.load(new File(getDataFolder(), "stations.yml"));
 		categoryLoader.load(new File(getDataFolder(), "categories.yml"));
 		File folder = new File(getDataFolder(), "blueprints");
+		if (!folder.exists() || !folder.isDirectory()) {
+			return;
+		}
+		File[] files = folder.listFiles();
+		if (files == null) {
+			return;
+		}
 		VFLogger.info(this, "Loading blueprints...");
-    	for (final File file : folder.listFiles()) {
-    		if(!file.isDirectory()) {
-    			blueprintLoader.load(file);
-    		}
-    	}
+		for (File file : files) {
+			if (file != null && file.isFile()) {
+				blueprintLoader.load(file);
+			}
+		}
 	}
 	
 	public void createConfigs() {
