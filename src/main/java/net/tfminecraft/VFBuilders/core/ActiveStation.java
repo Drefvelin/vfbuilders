@@ -119,9 +119,9 @@ public class ActiveStation {
         // Visual effects
         Location center = completedSpawn.clone().add(0.5, 1, 0.5);
 
-        center.getWorld().spawnParticle(Particle.EXPLOSION_NORMAL, center, 10, 0.3, 0.3, 0.3, 0.05);
+        center.getWorld().spawnParticle(Particle.EXPLOSION, center, 10, 0.3, 0.3, 0.3, 0.05);
         center.getWorld().spawnParticle(Particle.CLOUD, center, 20, 0.5, 0.5, 0.5, 0.01);
-        center.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, center, 40, 0.6, 1, 0.6, 0);
+        center.getWorld().spawnParticle(Particle.ENCHANT, center, 40, 0.6, 1, 0.6, 0);
 
         center.getWorld().playSound(center, Sound.ENTITY_IRON_GOLEM_REPAIR, 1f, 1.2f);
         center.getWorld().playSound(center, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.6f);

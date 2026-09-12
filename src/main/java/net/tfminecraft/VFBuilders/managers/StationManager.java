@@ -264,7 +264,7 @@ public class StationManager implements Listener {
 
         for (double d = 0; d < length; d += 0.5) {
             Location point = start.clone().add(direction.clone().multiply(d));
-            point.getWorld().spawnParticle(Particle.REDSTONE, point, 1,
+            point.getWorld().spawnParticle(Particle.DUST, point, 1,
                 new Particle.DustOptions(Color.LIME, 1.2f));
         }
     }

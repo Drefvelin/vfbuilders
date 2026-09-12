@@ -13,6 +13,7 @@ import org.bukkit.inventory.ItemStack;
 
 import me.Plugins.TLibs.TLibs;
 import me.Plugins.TLibs.Objects.API.ItemAPI;
+import me.Plugins.TLibs.Utils.TimeFormatter;
 import net.tfminecraft.VFBuilders.VFBuilders;
 import net.tfminecraft.VFBuilders.loaders.CategoryLoader;
 import net.tfminecraft.VehicleFramework.VFLogger;
@@ -40,7 +41,7 @@ public class Blueprint {
         }
         if(config.isConfigurationSection("item")) item = api.getCreator().getItemFromConfig(config.getConfigurationSection("item"));
         else item = new ItemStack(Material.DIRT, 1);
-        time = config.getInt("time", 10);
+        time = parseTime(key, config);
         for(String s : config.getStringList("inputs")) {
             String input = s.split("\\s+")[0];
             Integer amount = 1;
@@ -81,6 +82,22 @@ public class Blueprint {
 
     public int getTime() {
         return time;
+    }
+
+    private static int parseTime(String key, ConfigurationSection config) {
+        Object raw = config.get("time");
+        if (raw == null) {
+            return 10;
+        }
+        if (raw instanceof Number number) {
+            return Math.max(0, number.intValue());
+        }
+        try {
+            return TimeFormatter.parseSeconds(String.valueOf(raw));
+        } catch (IllegalArgumentException ex) {
+            VFLogger.log(VFBuilders.plugin, raw + " is not a valid time for the blueprint " + key);
+            return 10;
+        }
     }
 
     public HashMap<String, Integer> getInputs() {
@@ -140,7 +157,7 @@ public class Blueprint {
     public void drop(Location loc) {
         // Play a cool burst sound and particles
         loc.getWorld().spawnParticle(Particle.CLOUD, loc.clone().add(0.5, 1, 0.5), 15, 0.3, 0.3, 0.3, 0.01);
-        loc.getWorld().spawnParticle(Particle.CRIT_MAGIC, loc.clone().add(0.5, 1, 0.5), 20, 0.2, 0.2, 0.2, 0.05);
+        loc.getWorld().spawnParticle(Particle.ENCHANTED_HIT, loc.clone().add(0.5, 1, 0.5), 20, 0.2, 0.2, 0.2, 0.05);
         loc.getWorld().playSound(loc, Sound.BLOCK_BARREL_CLOSE, 1f, 1.3f);
 
         // Drop all items
