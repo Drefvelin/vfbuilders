@@ -6,9 +6,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
-import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.TextDisplay;
 
-import me.Plugins.TLibs.Utils.TimeFormatter;
+import net.tfminecraft.VFBuilders.display.StationTimerDisplay;
 import net.tfminecraft.VFBuilders.events.VehicleConstructEvent;
 import net.tfminecraft.VFBuilders.loaders.BlueprintLoader;
 import net.tfminecraft.VFBuilders.loaders.StationLoader;
@@ -27,8 +27,7 @@ public class ActiveStation {
     private Location spawnLoc;
     private UUID constructorUuid;
 
-    private ArmorStand hologramTitle;
-    private ArmorStand hologramTime;
+    private TextDisplay timerDisplay;
 
     
     public ActiveStation(Location loc, Station stored) {
@@ -59,7 +58,7 @@ public class ActiveStation {
             Blueprint blueprint = BlueprintLoader.getByString(blueprintId);
             if (blueprint != null) {
                 this.blueprint = blueprint;
-                updateHologram();
+                ensureDisplay();
             }
         }
 
@@ -73,7 +72,7 @@ public class ActiveStation {
         blueprint = b;
         timeLeft = b.getTime();
         this.constructorUuid = constructorUuid;
-        updateHologram();
+        ensureDisplay();
     }
 
     public boolean tick() {
@@ -83,7 +82,7 @@ public class ActiveStation {
         }
 
         timeLeft--;
-        updateHologram();
+        ensureDisplay();
 
         if (timeLeft == 0) {
             removeHolograms();
@@ -208,53 +207,34 @@ public class ActiveStation {
         this.constructorUuid = constructorUuid;
     }
 
-    private void updateHologram() {
-        if (!hasBlueprint()) return;
-        if (loc.getWorld() == null || !loc.getWorld().isChunkLoaded(loc.getBlockX() >> 4, loc.getBlockZ() >> 4)) return;
-
-        String title = "§eConstructing §6" + blueprint.getVehicle().getName();
-        String time = "§7Time: §f" + TimeFormatter.formatTime(timeLeft);
-
-        Location baseLoc = loc.clone().add(0.5, 1.4, 0.5);
-        Location timeLoc = baseLoc.clone().subtract(0, 0.25, 0); // Slightly below
-
-        if (hologramTitle == null || hologramTitle.isDead()) {
-            hologramTitle = spawnHologram(baseLoc, title);
-        } else {
-            hologramTitle.teleport(baseLoc);
-            hologramTitle.setCustomName(title);
+    public void ensureDisplay() {
+        if (!hasBlueprint()) {
+            removeDisplay();
+            return;
+        }
+        if (loc.getWorld() == null || !loc.getWorld().isChunkLoaded(loc.getBlockX() >> 4, loc.getBlockZ() >> 4)) {
+            removeDisplay();
+            return;
         }
 
-        if (hologramTime == null || hologramTime.isDead()) {
-            hologramTime = spawnHologram(timeLoc, time);
+        StationTimerDisplay.purgeAtStationBlock(loc);
+        StationTimerDisplay.purgeLegacyArmorStands(loc);
+
+        String text = StationTimerDisplay.formatText(blueprint.getVehicle().getName(), timeLeft);
+        if (timerDisplay == null || timerDisplay.isDead()) {
+            timerDisplay = StationTimerDisplay.spawn(loc.getWorld(), loc, text);
         } else {
-            hologramTime.teleport(timeLoc);
-            hologramTime.setCustomName(time);
+            StationTimerDisplay.update(timerDisplay, loc, text);
         }
     }
 
-    private ArmorStand spawnHologram(Location loc, String text) {
-        ArmorStand stand = loc.getWorld().spawn(loc, ArmorStand.class);
-        stand.setVisible(false);
-        stand.setGravity(false);
-        stand.setCustomNameVisible(true);
-        stand.setCustomName(text);
-        stand.setMarker(true);
-        stand.setSilent(true);
-        return stand;
+    public void removeDisplay() {
+        StationTimerDisplay.remove(timerDisplay);
+        timerDisplay = null;
     }
-
-
 
     public void removeHolograms() {
-        if (hologramTitle != null && !hologramTitle.isDead()) {
-            hologramTitle.remove();
-        }
-        if (hologramTime != null && !hologramTime.isDead()) {
-            hologramTime.remove();
-        }
-        hologramTitle = null;
-        hologramTime = null;
+        removeDisplay();
     }
 
 }

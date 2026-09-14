@@ -1,10 +1,13 @@
 package net.tfminecraft.VFBuilders.managers;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -15,6 +18,8 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -37,6 +42,7 @@ import net.tfminecraft.VFBuilders.core.Blueprint;
 import net.tfminecraft.VFBuilders.core.BlueprintCategory;
 import net.tfminecraft.VFBuilders.core.Station;
 import net.tfminecraft.VFBuilders.data.Database;
+import net.tfminecraft.VFBuilders.display.StationTimerDisplay;
 import net.tfminecraft.VFBuilders.enums.VFBGUI;
 import net.tfminecraft.VFBuilders.events.BeginVehicleConstructionEvent;
 import net.tfminecraft.VFBuilders.holders.VFBHolder;
@@ -65,11 +71,15 @@ public class StationManager implements Listener {
 
     public void start() {
         stations = Database.loadStations();
+        refreshAllDisplays();
         startStationTrailLoop();
         tickCycle();
     }
 
     public void stop() {
+        for (ActiveStation station : stations.values()) {
+            station.removeDisplay();
+        }
         Database.saveStations(stations);
     }
 
@@ -78,6 +88,7 @@ public class StationManager implements Listener {
         for (ActiveStation station : stations.values()) {
             station.rebindDefinitions();
         }
+        refreshAllDisplays();
     }
 
     public void tickCycle() {
@@ -106,6 +117,63 @@ public class StationManager implements Listener {
                 }
             }
         }.runTaskTimer(VFBuilders.plugin, 0L, 5L); // every 5 ticks (0.25s)
+    }
+
+    @EventHandler
+    public void onChunkLoad(ChunkLoadEvent e) {
+        Chunk chunk = e.getChunk();
+        StationTimerDisplay.purgeTaggedInChunk(chunk.getWorld(), chunk.getX(), chunk.getZ());
+        for (ActiveStation station : stationsInChunk(chunk)) {
+            refreshStationDisplay(station);
+        }
+    }
+
+    @EventHandler
+    public void onChunkUnload(ChunkUnloadEvent e) {
+        for (ActiveStation station : stationsInChunk(e.getChunk())) {
+            station.removeDisplay();
+        }
+    }
+
+    private Iterable<ActiveStation> stationsInChunk(Chunk chunk) {
+        List<ActiveStation> inChunk = new ArrayList<>();
+        if (chunk == null) {
+            return inChunk;
+        }
+        int chunkX = chunk.getX();
+        int chunkZ = chunk.getZ();
+        for (ActiveStation station : stations.values()) {
+            Location loc = station.getLocation();
+            if (loc.getWorld() == null || !loc.getWorld().equals(chunk.getWorld())) {
+                continue;
+            }
+            if ((loc.getBlockX() >> 4) == chunkX && (loc.getBlockZ() >> 4) == chunkZ) {
+                inChunk.add(station);
+            }
+        }
+        return inChunk;
+    }
+
+    private void refreshAllDisplays() {
+        for (ActiveStation station : stations.values()) {
+            refreshStationDisplay(station);
+        }
+    }
+
+    private void refreshStationDisplay(ActiveStation station) {
+        if (!station.hasBlueprint()) {
+            station.removeDisplay();
+            return;
+        }
+        Location loc = station.getLocation();
+        if (loc.getWorld() == null
+                || !loc.getWorld().isChunkLoaded(loc.getBlockX() >> 4, loc.getBlockZ() >> 4)) {
+            station.removeDisplay();
+            return;
+        }
+        StationTimerDisplay.purgeAtStationBlock(loc);
+        StationTimerDisplay.purgeLegacyArmorStands(loc);
+        station.ensureDisplay();
     }
 
 
